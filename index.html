@@ -37,6 +37,7 @@
     padding: 44px 40px 40px; max-width: 460px; width: 92%;
     animation: fadeUp 0.4s ease;
   }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
   .gate-logo {
     font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; letter-spacing: 0.12em;
     background: linear-gradient(135deg, #a78bfa, #ec4899, #06b6d4);
@@ -45,51 +46,43 @@
   }
   .gate-sub {
     font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.3em;
-    color: var(--muted); margin-bottom: 26px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px; text-transform: uppercase;
+  }
+  .free-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 100px; padding: 5px 12px; font-size: 0.72rem;
+    color: #86efac; font-family: 'JetBrains Mono', monospace; margin-bottom: 18px;
   }
   .gate-info { font-size: 0.82rem; color: var(--muted); font-weight: 300; line-height: 1.65; margin-bottom: 20px; }
   .gate-info a { color: #a78bfa; text-decoration: none; }
   .gate-info a:hover { text-decoration: underline; }
+  .gate-steps {
+    font-size: 0.8rem; color: var(--muted); font-weight: 300; line-height: 1.8;
+    margin-bottom: 20px; padding: 12px 16px;
+    background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.18); border-radius: 9px;
+  }
+  .gate-steps strong { color: #a78bfa; font-weight: 500; }
   .g-label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
   .key-row { display: flex; gap: 8px; margin-bottom: 14px; }
   .key-row input {
     flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
     color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
-    padding: 12px 14px; outline: none; transition: border-color 0.2s; letter-spacing: 0.04em;
+    padding: 12px 14px; outline: none; transition: border-color 0.2s;
   }
   .key-row input:focus { border-color: var(--accent); }
   .key-row input::placeholder { color: var(--muted); opacity: 0.5; letter-spacing: 0; }
-  .btn-eye {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
-    color: var(--muted); width: 46px; cursor: pointer; font-size: 1rem; transition: all 0.15s;
-  }
+  .btn-eye { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--muted); width: 46px; cursor: pointer; font-size: 1rem; transition: all 0.15s; }
   .btn-eye:hover { border-color: var(--accent); color: var(--accent); }
   .gate-note {
     font-size: 0.73rem; color: var(--muted); font-weight: 300; line-height: 1.55;
     margin-bottom: 22px; padding: 11px 15px;
-    background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.18); border-radius: 9px;
+    background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.18); border-radius: 9px;
   }
-  .gate-note strong { color: #a78bfa; font-weight: 500; }
-  .free-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
-    border-radius: 100px; padding: 5px 12px; font-size: 0.72rem;
-    color: #86efac; font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 18px;
-  }
-  .gate-error {
-    font-size: 0.8rem; color: #fca5a5;
-    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-    border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: none;
-  }
+  .gate-note strong { color: #67e8f9; font-weight: 500; }
+  .gate-error { font-size: 0.8rem; color: #fca5a5; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: none; }
   .gate-error.show { display: block; }
-  .btn-enter {
-    width: 100%; padding: 15px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: none; border-radius: 10px; color: white;
-    font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; letter-spacing: 0.15em;
-    cursor: pointer; transition: all 0.2s;
-  }
+  .btn-enter { width: 100%; padding: 15px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; color: white; font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; letter-spacing: 0.15em; cursor: pointer; transition: all 0.2s; }
   .btn-enter:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,58,237,0.4); }
   .btn-enter:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   .proxy-note { margin-top: 16px; font-size: 0.71rem; color: var(--muted); text-align: center; font-weight: 300; line-height: 1.5; }
@@ -97,74 +90,55 @@
   /* ── APP ── */
   .app { position: relative; z-index: 1; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; max-width: 1400px; margin: 0 auto; padding: 0 24px; }
   header { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 24px; border-bottom: 1px solid var(--border); }
-  .logo {
-    font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 0.12em;
-    background: linear-gradient(135deg, #a78bfa, #ec4899, #06b6d4);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  }
-  .logo span {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.3em; display: block;
-    background: linear-gradient(135deg, #a78bfa, #ec4899);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: -6px;
-  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 0.12em; background: linear-gradient(135deg, #a78bfa, #ec4899, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .logo span { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.3em; display: block; background: linear-gradient(135deg, #a78bfa, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: -6px; }
   .header-right { display: flex; align-items: center; gap: 10px; }
   .header-badge { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid var(--border); border-radius: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); background: var(--surface); }
   .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(34,197,94,0)} }
   .btn-rekey { padding: 6px 14px; border: 1px solid var(--border); border-radius: 100px; background: var(--surface); color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
   .btn-rekey:hover { border-color: var(--accent); color: var(--accent); }
-
   main { display: grid; grid-template-columns: 400px 1fr; gap: 28px; padding: 28px 0 40px; align-items: start; }
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; position: sticky; top: 28px; }
   .panel-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
   .panel-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 15px; }
   .panel-title { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
   .panel-body { padding: 22px; display: flex; flex-direction: column; gap: 20px; }
-
   label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
   textarea { width: 100%; min-height: 130px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 300; line-height: 1.6; padding: 14px 16px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; outline: none; }
   textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
   textarea::placeholder { color: var(--muted); opacity: 0.6; }
   .neg-ta { min-height: 70px !important; }
-
   .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .style-pill { padding: 9px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--muted); font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; user-select: none; }
   .style-pill:hover { border-color: var(--accent); color: var(--text); }
   .style-pill.active { border-color: var(--accent); background: rgba(124,58,237,0.15); color: #a78bfa; box-shadow: 0 0 12px rgba(124,58,237,0.2); }
-
   select, input[type="number"] { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; padding: 10px 14px; outline: none; transition: border-color 0.2s; appearance: none; }
   select:focus, input[type="number"]:focus { border-color: var(--accent); }
   .sel-wrap { position: relative; }
   .sel-wrap::after { content: '▾'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 0.8rem; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
   .quick-pills { display: flex; flex-wrap: wrap; gap: 6px; }
   .qpill { padding: 5px 11px; border: 1px solid var(--border); border-radius: 100px; font-size: 0.72rem; color: var(--muted); cursor: pointer; transition: all 0.15s; background: var(--bg); }
   .qpill:hover { border-color: var(--accent2); color: var(--accent2); }
-
   .btn-gen { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; color: white; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.15em; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
   .btn-gen::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); opacity: 0; transition: opacity 0.2s; }
   .btn-gen:hover::before { opacity: 1; }
   .btn-gen:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,58,237,0.4); }
-  .btn-gen:active { transform: translateY(0); }
   .btn-gen:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-
   .gallery-area { display: flex; flex-direction: column; gap: 22px; }
   .gal-header { display: flex; align-items: center; justify-content: space-between; }
   .gal-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 0.08em; color: var(--muted); }
   .gal-count { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); background: var(--surface); padding: 5px 12px; border-radius: 100px; border: 1px solid var(--border); }
-
   .loading-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 60px 40px; text-align: center; display: none; }
   .loading-card.on { display: block; }
   .loader-ring { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--accent); border-right-color: var(--accent2); animation: spin 0.9s linear infinite; margin: 0 auto 20px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-text { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--muted); animation: blink 1.5s infinite; }
   @keyframes blink { 0%,100%{opacity:1}50%{opacity:.4} }
-
   .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
   .image-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; animation: fadeUp 0.4s ease forwards; transition: transform 0.2s, box-shadow 0.2s; }
   .image-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); border-color: rgba(124,58,237,0.3); }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
   .image-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
   .card-body { padding: 14px 16px; }
   .card-prompt { font-size: 0.8rem; font-weight: 300; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px; }
@@ -173,20 +147,16 @@
   .card-actions { display: flex; gap: 8px; padding: 0 16px 14px; }
   .btn-act { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg); color: var(--muted); font-size: 0.78rem; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
   .btn-act:hover { border-color: var(--accent); color: var(--accent); }
-
   .empty-state { background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; padding: 80px 40px; text-align: center; }
   .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
   .empty-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; }
   .empty-sub { font-size: 0.85rem; color: var(--muted); opacity: 0.6; font-weight: 300; }
-
   .err-banner { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 14px 18px; font-size: 0.85rem; color: #fca5a5; display: none; }
   .err-banner.show { display: block; animation: fadeUp 0.3s ease; }
-
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } .panel { position: static; } }
 </style>
 </head>
@@ -198,31 +168,32 @@
   <div class="gate-card">
     <div class="gate-logo">VISIONS</div>
     <div class="gate-sub">AI Image Generator</div>
-
     <div class="free-badge">✦ 100% Free — No credit card needed</div>
 
-    <p class="gate-info">
-      Uses Google Gemini's free API. Get your free key at
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a>
-      — just sign in with Google and click "Create API Key". Takes 30 seconds.
-    </p>
+    <div class="gate-steps">
+      <strong>Get your free Groq API key in 30 seconds:</strong><br>
+      1. Go to <a href="https://console.groq.com" target="_blank" rel="noopener" style="color:#a78bfa">console.groq.com</a><br>
+      2. Sign up with email (no credit card)<br>
+      3. Click <strong>API Keys</strong> in the left sidebar<br>
+      4. Click <strong>Create API Key</strong> → copy it
+    </div>
 
-    <label class="g-label">Google Gemini API Key</label>
+    <label class="g-label">Groq API Key</label>
     <div class="key-row">
-      <input type="password" id="keyInput" placeholder="AIza..." autocomplete="off" spellcheck="false">
+      <input type="password" id="keyInput" placeholder="gsk_..." autocomplete="off" spellcheck="false">
       <button class="btn-eye" id="eyeBtn" title="Show/hide">👁</button>
     </div>
 
     <div class="gate-note">
-      <strong>🔒 Your key never leaves your browser.</strong> It is sent directly to Google's API and stored only in this tab's memory — cleared when you close the tab.
+      <strong>🔒 Your key never leaves your browser.</strong> Sent directly to Groq's API, stored only in this tab's memory — cleared when you close the tab.
     </div>
 
     <div class="gate-error" id="gateErr"></div>
     <button class="btn-enter" id="enterBtn">✦ Enter VISIONS</button>
 
     <p class="proxy-note">
-      Requests route through a private Cloudflare Worker proxy.<br>
-      Your key is forwarded only to <strong>generativelanguage.googleapis.com</strong>.
+      Requests route through a private Cloudflare Worker.<br>
+      Your key is forwarded only to <strong>api.groq.com</strong>.
     </p>
   </div>
 </div>
@@ -232,7 +203,7 @@
   <header>
     <div class="logo">VISIONS<span>AI IMAGE GENERATOR</span></div>
     <div class="header-right">
-      <div class="header-badge"><div class="status-dot"></div>GEMINI · FREE</div>
+      <div class="header-badge"><div class="status-dot"></div>GROQ · FREE</div>
       <button class="btn-rekey" id="rekeyBtn">🔑 Change Key</button>
     </div>
   </header>
@@ -248,7 +219,6 @@
           <label>Main Prompt</label>
           <textarea id="prompt" placeholder="Describe your vision in detail…&#10;&#10;e.g. A lone astronaut standing on the edge of a neon-lit alien city, cinematic lighting, ultra detailed"></textarea>
         </div>
-
         <div>
           <label>Quick Starters</label>
           <div class="quick-pills">
@@ -262,7 +232,6 @@
             <div class="qpill" data-append="dark academia aesthetic, moody tones">📚 Academia</div>
           </div>
         </div>
-
         <div>
           <label>Art Style</label>
           <div class="style-grid" id="styleGrid">
@@ -277,12 +246,10 @@
             <div class="style-pill" data-style="pixel art, retro game">Pixel Art</div>
           </div>
         </div>
-
         <div>
           <label>Negative Prompt <span style="opacity:.4;font-size:.65em">(what to avoid)</span></label>
           <textarea class="neg-ta" id="negPrompt" placeholder="blurry, low quality, watermark, distorted…"></textarea>
         </div>
-
         <div class="row2">
           <div>
             <label>Aspect Ratio</label>
@@ -300,7 +267,6 @@
             <input type="number" id="count" value="1" min="1" max="4">
           </div>
         </div>
-
         <div class="err-banner" id="errBanner"></div>
         <button class="btn-gen" id="genBtn">✦ Generate</button>
       </div>
@@ -327,14 +293,13 @@
 
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
-const WORKER   = 'https://visions-proxy.prithvinpratheep.workers.dev';
-const MODEL    = 'gemini-2.0-flash';
+const WORKER = 'https://visions-proxy.prithvinpratheep.workers.dev';
+const MODEL  = 'llama-3.3-70b-versatile';
 const LOAD_MSGS = [
   'CONJURING YOUR VISION…','RENDERING PIXELS…','WEAVING LIGHT…',
   'CRAFTING REALITY…','MANIFESTING ART…','PAINTING WITH AI…'
 ];
 
-// ─── State ────────────────────────────────────────────────────────────────────
 let apiKey = '';
 let selectedStyle = '';
 let totalImages = 0;
@@ -351,8 +316,7 @@ document.getElementById('eyeBtn').addEventListener('click', () => {
 keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') attemptEnter(); });
 enterBtn.addEventListener('click', attemptEnter);
 document.getElementById('rekeyBtn').addEventListener('click', () => {
-  apiKey = '';
-  keyInput.value = '';
+  apiKey = ''; keyInput.value = '';
   gateErr.classList.remove('show');
   gateEl.style.display = 'flex';
 });
@@ -360,15 +324,15 @@ document.getElementById('rekeyBtn').addEventListener('click', () => {
 async function attemptEnter() {
   const val = keyInput.value.trim();
   gateErr.classList.remove('show');
-  if (!val.startsWith('AIza')) {
-    gateErr.textContent = 'That doesn\'t look right — Gemini keys start with AIza';
+  if (!val.startsWith('gsk_')) {
+    gateErr.textContent = 'That doesn\'t look right — Groq keys start with gsk_';
     gateErr.classList.add('show');
     return;
   }
   enterBtn.disabled = true;
   enterBtn.textContent = 'Verifying…';
   try {
-    await callGemini('Reply with only the word: ready', val);
+    await callGroq('Reply with only the word: ready', val);
     apiKey = val;
     gateEl.style.display = 'none';
   } catch (err) {
@@ -422,43 +386,46 @@ function setLoading(on) {
   }
 }
 
-// ─── Gemini API call via Worker ───────────────────────────────────────────────
-async function callGemini(userPrompt, keyOverride) {
+// ─── Groq API call ────────────────────────────────────────────────────────────
+async function callGroq(userPrompt, keyOverride) {
   const key = keyOverride || apiKey;
 
-  const systemInstruction = `You are VISIONS, an expert AI art generator.
-When given a prompt, respond with ONLY a raw SVG element — no markdown, no prose, no code fences.
+  const system = `You are VISIONS, an expert AI art generator.
+When given a prompt, respond with ONLY a raw SVG element — no markdown, no prose, no code fences, no backticks.
 The SVG must:
-- Start with <svg and end with </svg>
+- Start exactly with <svg and end with </svg>
 - Use viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"
 - Contain rich, layered artistic content: gradients, shapes, patterns, atmospheric depth
 - Visually represent the user's prompt in a creative and detailed way
-- Be self-contained (no external images or fonts)
-Just the SVG code. Nothing else.`;
+- Be fully self-contained (no external images or fonts)
+Output the SVG code only. Absolutely nothing else.`;
 
-  const url = `${WORKER}/v1beta/models/${MODEL}:generateContent?key=${key}`;
-
-  const body = JSON.stringify({
-    system_instruction: { parts: [{ text: systemInstruction }] },
-    contents: [{ parts: [{ text: userPrompt }] }]
-  });
-
-  const res = await fetch(url, {
+  const res = await fetch(`${WORKER}/openai/v1/chat/completions`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body
+    headers: {
+      'content-type': 'application/json',
+      'authorization': `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user',   content: userPrompt }
+      ]
+    })
   });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     const msg = errData.error?.message || `HTTP ${res.status}`;
-    if (res.status === 400) throw new Error('Invalid API key — please re-enter.');
+    if (res.status === 401) throw new Error('Invalid API key — please re-enter.');
     if (res.status === 429) throw new Error('Rate limited — wait a moment and try again.');
     throw new Error(msg);
   }
 
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return data.choices?.[0]?.message?.content || '';
 }
 
 // ─── SVG handling ─────────────────────────────────────────────────────────────
@@ -513,8 +480,7 @@ function addCard(svgData, promptText, style, ratio) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  const grid = document.getElementById('imageGrid');
-  grid.insertBefore(card, grid.firstChild);
+  document.getElementById('imageGrid').insertBefore(card, document.getElementById('imageGrid').firstChild);
 }
 
 // ─── Generate ─────────────────────────────────────────────────────────────────
@@ -540,7 +506,7 @@ async function generate() {
   setLoading(true);
   document.getElementById('errBanner').classList.remove('show');
 
-  const jobs    = Array.from({ length: count }, () => callGemini(full));
+  const jobs    = Array.from({ length: count }, () => callGroq(full));
   const results = await Promise.allSettled(jobs);
 
   let ok = false;
