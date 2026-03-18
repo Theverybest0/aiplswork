@@ -70,6 +70,13 @@
     background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.18); border-radius: 9px;
   }
   .gate-note strong { color: #a78bfa; font-weight: 500; }
+  .free-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 100px; padding: 5px 12px; font-size: 0.72rem;
+    color: #86efac; font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 18px;
+  }
   .gate-error {
     font-size: 0.8rem; color: #fca5a5;
     background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
@@ -86,7 +93,6 @@
   .btn-enter:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,58,237,0.4); }
   .btn-enter:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   .proxy-note { margin-top: 16px; font-size: 0.71rem; color: var(--muted); text-align: center; font-weight: 300; line-height: 1.5; }
-  .proxy-note a { color: #a78bfa; text-decoration: none; }
 
   /* ── APP ── */
   .app { position: relative; z-index: 1; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; max-width: 1400px; margin: 0 auto; padding: 0 24px; }
@@ -193,28 +199,30 @@
     <div class="gate-logo">VISIONS</div>
     <div class="gate-sub">AI Image Generator</div>
 
+    <div class="free-badge">✦ 100% Free — No credit card needed</div>
+
     <p class="gate-info">
-      This app runs entirely in your browser — including on GitHub Pages. You just need a free
-      <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic API key</a>.
+      Uses Google Gemini's free API. Get your free key at
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com</a>
+      — just sign in with Google and click "Create API Key". Takes 30 seconds.
     </p>
 
-    <label class="g-label">Anthropic API Key</label>
+    <label class="g-label">Google Gemini API Key</label>
     <div class="key-row">
-      <input type="password" id="keyInput" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false">
+      <input type="password" id="keyInput" placeholder="AIza..." autocomplete="off" spellcheck="false">
       <button class="btn-eye" id="eyeBtn" title="Show/hide">👁</button>
     </div>
 
     <div class="gate-note">
-      <strong>🔒 Your key never leaves your browser.</strong> It is sent directly to Anthropic's API and stored only in this tab's memory — cleared when you close the tab. This site has no backend.
+      <strong>🔒 Your key never leaves your browser.</strong> It is sent directly to Google's API and stored only in this tab's memory — cleared when you close the tab.
     </div>
 
     <div class="gate-error" id="gateErr"></div>
-
     <button class="btn-enter" id="enterBtn">✦ Enter VISIONS</button>
 
     <p class="proxy-note">
       Requests route through a private Cloudflare Worker proxy.<br>
-      Your API key is forwarded only to <strong>api.anthropic.com</strong> — nothing is stored.
+      Your key is forwarded only to <strong>generativelanguage.googleapis.com</strong>.
     </p>
   </div>
 </div>
@@ -224,20 +232,18 @@
   <header>
     <div class="logo">VISIONS<span>AI IMAGE GENERATOR</span></div>
     <div class="header-right">
-      <div class="header-badge"><div class="status-dot"></div>CLAUDE SONNET · ONLINE</div>
+      <div class="header-badge"><div class="status-dot"></div>GEMINI · FREE</div>
       <button class="btn-rekey" id="rekeyBtn">🔑 Change Key</button>
     </div>
   </header>
 
   <main>
-    <!-- Panel -->
     <aside class="panel">
       <div class="panel-header">
         <div class="panel-icon">✦</div>
         <div class="panel-title">Prompt Studio</div>
       </div>
       <div class="panel-body">
-
         <div>
           <label>Main Prompt</label>
           <textarea id="prompt" placeholder="Describe your vision in detail…&#10;&#10;e.g. A lone astronaut standing on the edge of a neon-lit alien city, cinematic lighting, ultra detailed"></textarea>
@@ -300,7 +306,6 @@
       </div>
     </aside>
 
-    <!-- Gallery -->
     <div class="gallery-area">
       <div class="gal-header">
         <div class="gal-title">Gallery</div>
@@ -322,11 +327,8 @@
 
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
-// Point this at your own Cloudflare Worker (see cloudflare-worker.js).
-// Replace the URL below after you deploy your Worker.
-const PROXY = 'https://visions-proxy.prithvinpratheep.workers.dev/v1/messages';
-const MODEL = 'claude-sonnet-4-20250514';
-
+const WORKER   = 'https://visions-proxy.prithvinpratheep.workers.dev';
+const MODEL    = 'gemini-2.0-flash';
 const LOAD_MSGS = [
   'CONJURING YOUR VISION…','RENDERING PIXELS…','WEAVING LIGHT…',
   'CRAFTING REALITY…','MANIFESTING ART…','PAINTING WITH AI…'
@@ -337,7 +339,7 @@ let apiKey = '';
 let selectedStyle = '';
 let totalImages = 0;
 
-// ─── Gate logic ───────────────────────────────────────────────────────────────
+// ─── Gate ─────────────────────────────────────────────────────────────────────
 const gateEl   = document.getElementById('apiGate');
 const keyInput = document.getElementById('keyInput');
 const gateErr  = document.getElementById('gateErr');
@@ -346,13 +348,11 @@ const enterBtn = document.getElementById('enterBtn');
 document.getElementById('eyeBtn').addEventListener('click', () => {
   keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
 });
-
 keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') attemptEnter(); });
 enterBtn.addEventListener('click', attemptEnter);
 document.getElementById('rekeyBtn').addEventListener('click', () => {
   apiKey = '';
   keyInput.value = '';
-  gateErr.textContent = '';
   gateErr.classList.remove('show');
   gateEl.style.display = 'flex';
 });
@@ -360,23 +360,19 @@ document.getElementById('rekeyBtn').addEventListener('click', () => {
 async function attemptEnter() {
   const val = keyInput.value.trim();
   gateErr.classList.remove('show');
-
-  if (!val.startsWith('sk-ant-')) {
-    gateErr.textContent = 'That doesn\'t look right — Anthropic keys start with sk-ant-';
+  if (!val.startsWith('AIza')) {
+    gateErr.textContent = 'That doesn\'t look right — Gemini keys start with AIza';
     gateErr.classList.add('show');
     return;
   }
-
   enterBtn.disabled = true;
   enterBtn.textContent = 'Verifying…';
-
   try {
-    // Ping the API with a tiny call to validate the key
-    await callAPI('Reply with only the word: ready', val);
+    await callGemini('Reply with only the word: ready', val);
     apiKey = val;
     gateEl.style.display = 'none';
   } catch (err) {
-    gateErr.textContent = '⚠ ' + (err.message || 'Connection failed. Check your key and try again.');
+    gateErr.textContent = '⚠ ' + (err.message || 'Connection failed. Check your key.');
     gateErr.classList.add('show');
   } finally {
     enterBtn.disabled = false;
@@ -392,7 +388,6 @@ document.getElementById('styleGrid').addEventListener('click', e => {
   p.classList.add('active');
   selectedStyle = p.dataset.style;
 });
-
 document.querySelectorAll('.qpill').forEach(pill => {
   pill.addEventListener('click', () => {
     const ta = document.getElementById('prompt');
@@ -418,22 +413,21 @@ function setLoading(on) {
   if (on) {
     document.getElementById('emptyState').style.display = 'none';
     let i = 0;
-    const id = setInterval(() => {
+    card._tid = setInterval(() => {
       document.getElementById('loadText').textContent = LOAD_MSGS[i++ % LOAD_MSGS.length];
     }, 1400);
-    card._tid = id;
   } else {
     clearInterval(card._tid);
     card.classList.remove('on');
   }
 }
 
-// ─── API call (direct → proxy fallback) ───────────────────────────────────────
-async function callAPI(userPrompt, keyOverride) {
+// ─── Gemini API call via Worker ───────────────────────────────────────────────
+async function callGemini(userPrompt, keyOverride) {
   const key = keyOverride || apiKey;
 
-  const system = `You are VISIONS, an expert AI art generator.
-When given a prompt, respond with ONLY a raw SVG element (no markdown, no prose, no code fences).
+  const systemInstruction = `You are VISIONS, an expert AI art generator.
+When given a prompt, respond with ONLY a raw SVG element — no markdown, no prose, no code fences.
 The SVG must:
 - Start with <svg and end with </svg>
 - Use viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"
@@ -442,41 +436,33 @@ The SVG must:
 - Be self-contained (no external images or fonts)
 Just the SVG code. Nothing else.`;
 
+  const url = `${WORKER}/v1beta/models/${MODEL}:generateContent?key=${key}`;
+
   const body = JSON.stringify({
-    model: MODEL,
-    max_tokens: 4096,
-    system,
-    messages: [{ role: 'user', content: userPrompt }]
+    system_instruction: { parts: [{ text: systemInstruction }] },
+    contents: [{ parts: [{ text: userPrompt }] }]
   });
 
-  // Route through your own Cloudflare Worker — clean CORS, no third parties
-  const res = await fetch(PROXY, {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01'
-    },
+    headers: { 'content-type': 'application/json' },
     body
   });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     const msg = errData.error?.message || `HTTP ${res.status}`;
-    if (res.status === 401) throw new Error('Invalid API key — please re-enter.');
+    if (res.status === 400) throw new Error('Invalid API key — please re-enter.');
     if (res.status === 429) throw new Error('Rate limited — wait a moment and try again.');
     throw new Error(msg);
   }
 
   const data = await res.json();
-  const text = data.content?.find(b => b.type === 'text')?.text || '';
-  if (!text) throw new Error('Empty response from API.');
-  return text;
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 // ─── SVG handling ─────────────────────────────────────────────────────────────
 function extractSVG(raw) {
-  // Strip markdown fences if Claude added them
   const cleaned = raw.replace(/```[a-z]*\n?/gi, '').trim();
   const m = cleaned.match(/<svg[\s\S]*<\/svg>/i);
   return m ? m[0] : null;
@@ -493,8 +479,8 @@ function addCard(svgData, promptText, style, ratio) {
 
   const card = document.createElement('div');
   card.className = 'image-card';
-
   const safePrompt = promptText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const id = totalImages;
 
   card.innerHTML = `
     <img src="${svgToURL(svgData)}" alt="Generated artwork" loading="lazy">
@@ -503,27 +489,25 @@ function addCard(svgData, promptText, style, ratio) {
       <div class="card-meta">
         ${style ? `<span class="meta-tag">${style.split(',')[0].trim()}</span>` : ''}
         <span class="meta-tag">${ratio}</span>
-        <span class="meta-tag">#${totalImages}</span>
+        <span class="meta-tag">#${id}</span>
       </div>
     </div>
     <div class="card-actions">
-      <button class="btn-act" id="dl-${totalImages}">⬇ Download</button>
-      <button class="btn-act" id="rx-${totalImages}">↺ Remix</button>
+      <button class="btn-act" id="dl-${id}">⬇ Download</button>
+      <button class="btn-act" id="rx-${id}">↺ Remix</button>
     </div>`;
 
-  card.querySelector(`#dl-${totalImages}`).addEventListener('click', function() {
+  card.querySelector(`#dl-${id}`).addEventListener('click', function() {
     const blob = new Blob([svgData], { type: 'image/svg+xml' });
     const a = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(blob),
-      download: 'visions-' + Date.now() + '.svg'
+      href: URL.createObjectURL(blob), download: 'visions-' + Date.now() + '.svg'
     });
-    a.click();
-    URL.revokeObjectURL(a.href);
+    a.click(); URL.revokeObjectURL(a.href);
     this.textContent = '✓ Saved!';
     setTimeout(() => this.textContent = '⬇ Download', 2200);
   });
 
-  card.querySelector(`#rx-${totalImages}`).addEventListener('click', () => {
+  card.querySelector(`#rx-${id}`).addEventListener('click', () => {
     document.getElementById('prompt').value = promptText;
     document.getElementById('prompt').focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -535,9 +519,8 @@ function addCard(svgData, promptText, style, ratio) {
 
 // ─── Generate ─────────────────────────────────────────────────────────────────
 async function generate() {
-  const promptEl  = document.getElementById('prompt');
+  const promptEl   = document.getElementById('prompt');
   const userPrompt = promptEl.value.trim();
-
   if (!userPrompt) {
     promptEl.style.borderColor = '#ef4444';
     promptEl.focus();
@@ -552,12 +535,12 @@ async function generate() {
   let full = userPrompt;
   if (selectedStyle) full += ', ' + selectedStyle;
   if (neg) full += '\n\nPlease avoid: ' + neg;
-  full += '\nAspect ratio: ' + ratio;
+  full += '\nAspect ratio preference: ' + ratio;
 
   setLoading(true);
   document.getElementById('errBanner').classList.remove('show');
 
-  const jobs    = Array.from({ length: count }, () => callAPI(full));
+  const jobs    = Array.from({ length: count }, () => callGemini(full));
   const results = await Promise.allSettled(jobs);
 
   let ok = false;
