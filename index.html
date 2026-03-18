@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VISIONS — AI Image Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080810; --surface: #0f0f1a; --border: #1e1e35;
+    --accent: #7c3aed; --accent2: #ec4899; --accent3: #06b6d4;
+    --text: #e8e8f0; --muted: #6b6b8a;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(236,72,153,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 50% 50%, rgba(6,182,212,0.05) 0%, transparent 70%);
+  }
+  .noise {
+    position: fixed; inset: 0; opacity: 0.03; pointer-events: none; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* ── GATE ── */
+  #apiGate {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(8,8,16,0.97); backdrop-filter: blur(12px);
+  }
+  .gate-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 44px 40px 40px; max-width: 460px; width: 92%;
+    animation: fadeUp 0.4s ease;
+  }
+  .gate-logo {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; letter-spacing: 0.12em;
+    background: linear-gradient(135deg, #a78bfa, #ec4899, #06b6d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 2px;
+  }
+  .gate-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.3em;
+    color: var(--muted); margin-bottom: 26px; text-transform: uppercase;
+  }
+  .gate-info { font-size: 0.82rem; color: var(--muted); font-weight: 300; line-height: 1.65; margin-bottom: 20px; }
+  .gate-info a { color: #a78bfa; text-decoration: none; }
+  .gate-info a:hover { text-decoration: underline; }
+  .g-label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .key-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .key-row input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+    padding: 12px 14px; outline: none; transition: border-color 0.2s; letter-spacing: 0.04em;
+  }
+  .key-row input:focus { border-color: var(--accent); }
+  .key-row input::placeholder { color: var(--muted); opacity: 0.5; letter-spacing: 0; }
+  .btn-eye {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--muted); width: 46px; cursor: pointer; font-size: 1rem; transition: all 0.15s;
+  }
+  .btn-eye:hover { border-color: var(--accent); color: var(--accent); }
+  .gate-note {
+    font-size: 0.73rem; color: var(--muted); font-weight: 300; line-height: 1.55;
+    margin-bottom: 22px; padding: 11px 15px;
+    background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.18); border-radius: 9px;
+  }
+  .gate-note strong { color: #a78bfa; font-weight: 500; }
+  .gate-error {
+    font-size: 0.8rem; color: #fca5a5;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: none;
+  }
+  .gate-error.show { display: block; }
+  .btn-enter {
+    width: 100%; padding: 15px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px; color: white;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; letter-spacing: 0.15em;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-enter:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,58,237,0.4); }
+  .btn-enter:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .proxy-note { margin-top: 16px; font-size: 0.71rem; color: var(--muted); text-align: center; font-weight: 300; line-height: 1.5; }
+  .proxy-note a { color: #a78bfa; text-decoration: none; }
+
+  /* ── APP ── */
+  .app { position: relative; z-index: 1; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 24px; border-bottom: 1px solid var(--border); }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 0.12em;
+    background: linear-gradient(135deg, #a78bfa, #ec4899, #06b6d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .logo span {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.3em; display: block;
+    background: linear-gradient(135deg, #a78bfa, #ec4899);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: -6px;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .header-badge { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid var(--border); border-radius: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); background: var(--surface); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(34,197,94,0)} }
+  .btn-rekey { padding: 6px 14px; border: 1px solid var(--border); border-radius: 100px; background: var(--surface); color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
+  .btn-rekey:hover { border-color: var(--accent); color: var(--accent); }
+
+  main { display: grid; grid-template-columns: 400px 1fr; gap: 28px; padding: 28px 0 40px; align-items: start; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; position: sticky; top: 28px; }
+  .panel-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .panel-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .panel-title { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; }
+  .panel-body { padding: 22px; display: flex; flex-direction: column; gap: 20px; }
+
+  label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+  textarea { width: 100%; min-height: 130px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 300; line-height: 1.6; padding: 14px 16px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; outline: none; }
+  textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+  textarea::placeholder { color: var(--muted); opacity: 0.6; }
+  .neg-ta { min-height: 70px !important; }
+
+  .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .style-pill { padding: 9px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--muted); font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; user-select: none; }
+  .style-pill:hover { border-color: var(--accent); color: var(--text); }
+  .style-pill.active { border-color: var(--accent); background: rgba(124,58,237,0.15); color: #a78bfa; box-shadow: 0 0 12px rgba(124,58,237,0.2); }
+
+  select, input[type="number"] { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; padding: 10px 14px; outline: none; transition: border-color 0.2s; appearance: none; }
+  select:focus, input[type="number"]:focus { border-color: var(--accent); }
+  .sel-wrap { position: relative; }
+  .sel-wrap::after { content: '▾'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 0.8rem; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .quick-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .qpill { padding: 5px 11px; border: 1px solid var(--border); border-radius: 100px; font-size: 0.72rem; color: var(--muted); cursor: pointer; transition: all 0.15s; background: var(--bg); }
+  .qpill:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .btn-gen { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; color: white; font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.15em; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .btn-gen::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); opacity: 0; transition: opacity 0.2s; }
+  .btn-gen:hover::before { opacity: 1; }
+  .btn-gen:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,58,237,0.4); }
+  .btn-gen:active { transform: translateY(0); }
+  .btn-gen:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .gallery-area { display: flex; flex-direction: column; gap: 22px; }
+  .gal-header { display: flex; align-items: center; justify-content: space-between; }
+  .gal-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 0.08em; color: var(--muted); }
+  .gal-count { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); background: var(--surface); padding: 5px 12px; border-radius: 100px; border: 1px solid var(--border); }
+
+  .loading-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 60px 40px; text-align: center; display: none; }
+  .loading-card.on { display: block; }
+  .loader-ring { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--accent); border-right-color: var(--accent2); animation: spin 0.9s linear infinite; margin: 0 auto 20px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--muted); animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.4} }
+
+  .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .image-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; animation: fadeUp 0.4s ease forwards; transition: transform 0.2s, box-shadow 0.2s; }
+  .image-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); border-color: rgba(124,58,237,0.3); }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
+  .image-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .card-body { padding: 14px 16px; }
+  .card-prompt { font-size: 0.8rem; font-weight: 300; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 10px; }
+  .card-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+  .meta-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; padding: 3px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--muted); }
+  .card-actions { display: flex; gap: 8px; padding: 0 16px 14px; }
+  .btn-act { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg); color: var(--muted); font-size: 0.78rem; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .btn-act:hover { border-color: var(--accent); color: var(--accent); }
+
+  .empty-state { background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; padding: 80px 40px; text-align: center; }
+  .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
+  .empty-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; }
+  .empty-sub { font-size: 0.85rem; color: var(--muted); opacity: 0.6; font-weight: 300; }
+
+  .err-banner { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 14px 18px; font-size: 0.85rem; color: #fca5a5; display: none; }
+  .err-banner.show { display: block; animation: fadeUp 0.3s ease; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } .panel { position: static; } }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<!-- ══════════ API KEY GATE ══════════ -->
+<div id="apiGate">
+  <div class="gate-card">
+    <div class="gate-logo">VISIONS</div>
+    <div class="gate-sub">AI Image Generator</div>
+
+    <p class="gate-info">
+      This app runs entirely in your browser — including on GitHub Pages. You just need a free
+      <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic API key</a>.
+    </p>
+
+    <label class="g-label">Anthropic API Key</label>
+    <div class="key-row">
+      <input type="password" id="keyInput" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false">
+      <button class="btn-eye" id="eyeBtn" title="Show/hide">👁</button>
+    </div>
+
+    <div class="gate-note">
+      <strong>🔒 Your key never leaves your browser.</strong> It is sent directly to Anthropic's API and stored only in this tab's memory — cleared when you close the tab. This site has no backend.
+    </div>
+
+    <div class="gate-error" id="gateErr"></div>
+
+    <button class="btn-enter" id="enterBtn">✦ Enter VISIONS</button>
+
+    <p class="proxy-note">
+      Uses <a href="https://corsproxy.io" target="_blank" rel="noopener">corsproxy.io</a> as a CORS bridge so your browser can reach the Anthropic API.
+      Your API key is forwarded only to <strong>api.anthropic.com</strong>.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════ MAIN APP ══════════ -->
+<div class="app">
+  <header>
+    <div class="logo">VISIONS<span>AI IMAGE GENERATOR</span></div>
+    <div class="header-right">
+      <div class="header-badge"><div class="status-dot"></div>CLAUDE SONNET · ONLINE</div>
+      <button class="btn-rekey" id="rekeyBtn">🔑 Change Key</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Panel -->
+    <aside class="panel">
+      <div class="panel-header">
+        <div class="panel-icon">✦</div>
+        <div class="panel-title">Prompt Studio</div>
+      </div>
+      <div class="panel-body">
+
+        <div>
+          <label>Main Prompt</label>
+          <textarea id="prompt" placeholder="Describe your vision in detail…&#10;&#10;e.g. A lone astronaut standing on the edge of a neon-lit alien city, cinematic lighting, ultra detailed"></textarea>
+        </div>
+
+        <div>
+          <label>Quick Starters</label>
+          <div class="quick-pills">
+            <div class="qpill" data-append="cinematic lighting, golden hour">🌅 Golden Hour</div>
+            <div class="qpill" data-append="hyper realistic, 8k ultra detailed">🔬 Hyper Real</div>
+            <div class="qpill" data-append="impressionist oil painting style">🎨 Oil Paint</div>
+            <div class="qpill" data-append="cyberpunk neon city, rain reflections">🌆 Cyberpunk</div>
+            <div class="qpill" data-append="ethereal fantasy, magical atmosphere">✨ Fantasy</div>
+            <div class="qpill" data-append="minimalist, clean lines, studio light">⬜ Minimal</div>
+            <div class="qpill" data-append="macro photography, bokeh background">📷 Macro</div>
+            <div class="qpill" data-append="dark academia aesthetic, moody tones">📚 Academia</div>
+          </div>
+        </div>
+
+        <div>
+          <label>Art Style</label>
+          <div class="style-grid" id="styleGrid">
+            <div class="style-pill active" data-style="">No Style</div>
+            <div class="style-pill" data-style="photorealistic, photograph">Photo</div>
+            <div class="style-pill" data-style="digital art, concept art">Digital Art</div>
+            <div class="style-pill" data-style="oil painting, painterly">Oil Paint</div>
+            <div class="style-pill" data-style="anime style, manga">Anime</div>
+            <div class="style-pill" data-style="watercolor painting">Watercolor</div>
+            <div class="style-pill" data-style="3D render, octane render">3D Render</div>
+            <div class="style-pill" data-style="pencil sketch, line art">Sketch</div>
+            <div class="style-pill" data-style="pixel art, retro game">Pixel Art</div>
+          </div>
+        </div>
+
+        <div>
+          <label>Negative Prompt <span style="opacity:.4;font-size:.65em">(what to avoid)</span></label>
+          <textarea class="neg-ta" id="negPrompt" placeholder="blurry, low quality, watermark, distorted…"></textarea>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label>Aspect Ratio</label>
+            <div class="sel-wrap">
+              <select id="aspectRatio">
+                <option value="square">1:1 Square</option>
+                <option value="landscape">16:9 Wide</option>
+                <option value="portrait">9:16 Tall</option>
+                <option value="classic">4:3 Classic</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>Count</label>
+            <input type="number" id="count" value="1" min="1" max="4">
+          </div>
+        </div>
+
+        <div class="err-banner" id="errBanner"></div>
+        <button class="btn-gen" id="genBtn">✦ Generate</button>
+      </div>
+    </aside>
+
+    <!-- Gallery -->
+    <div class="gallery-area">
+      <div class="gal-header">
+        <div class="gal-title">Gallery</div>
+        <div class="gal-count" id="galCount">0 images</div>
+      </div>
+      <div class="loading-card" id="loadCard">
+        <div class="loader-ring"></div>
+        <div class="loading-text" id="loadText">GENERATING YOUR VISION…</div>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">✦</div>
+        <div class="empty-title">Your Canvas Awaits</div>
+        <div class="empty-sub">Describe an image and hit Generate to begin</div>
+      </div>
+      <div class="image-grid" id="imageGrid"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+// Primary: Anthropic's own CORS header (works if they allow it)
+// Fallback: corsproxy.io wraps the request and adds CORS headers
+const ANTHROPIC = 'https://api.anthropic.com/v1/messages';
+const PROXY     = 'https://corsproxy.io/?url=' + encodeURIComponent(ANTHROPIC);
+const MODEL     = 'claude-sonnet-4-20250514';
+
+const LOAD_MSGS = [
+  'CONJURING YOUR VISION…','RENDERING PIXELS…','WEAVING LIGHT…',
+  'CRAFTING REALITY…','MANIFESTING ART…','PAINTING WITH AI…'
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let apiKey = '';
+let selectedStyle = '';
+let totalImages = 0;
+
+// ─── Gate logic ───────────────────────────────────────────────────────────────
+const gateEl   = document.getElementById('apiGate');
+const keyInput = document.getElementById('keyInput');
+const gateErr  = document.getElementById('gateErr');
+const enterBtn = document.getElementById('enterBtn');
+
+document.getElementById('eyeBtn').addEventListener('click', () => {
+  keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+});
+
+keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') attemptEnter(); });
+enterBtn.addEventListener('click', attemptEnter);
+document.getElementById('rekeyBtn').addEventListener('click', () => {
+  apiKey = '';
+  keyInput.value = '';
+  gateErr.textContent = '';
+  gateErr.classList.remove('show');
+  gateEl.style.display = 'flex';
+});
+
+async function attemptEnter() {
+  const val = keyInput.value.trim();
+  gateErr.classList.remove('show');
+
+  if (!val.startsWith('sk-ant-')) {
+    gateErr.textContent = 'That doesn\'t look right — Anthropic keys start with sk-ant-';
+    gateErr.classList.add('show');
+    return;
+  }
+
+  enterBtn.disabled = true;
+  enterBtn.textContent = 'Verifying…';
+
+  try {
+    // Ping the API with a tiny call to validate the key
+    await callAPI('Reply with only the word: ready', val);
+    apiKey = val;
+    gateEl.style.display = 'none';
+  } catch (err) {
+    gateErr.textContent = '⚠ ' + (err.message || 'Connection failed. Check your key and try again.');
+    gateErr.classList.add('show');
+  } finally {
+    enterBtn.disabled = false;
+    enterBtn.textContent = '✦ Enter VISIONS';
+  }
+}
+
+// ─── Style pills ──────────────────────────────────────────────────────────────
+document.getElementById('styleGrid').addEventListener('click', e => {
+  const p = e.target.closest('.style-pill');
+  if (!p) return;
+  document.querySelectorAll('.style-pill').forEach(x => x.classList.remove('active'));
+  p.classList.add('active');
+  selectedStyle = p.dataset.style;
+});
+
+document.querySelectorAll('.qpill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    const ta = document.getElementById('prompt');
+    ta.value = ta.value ? ta.value + ', ' + pill.dataset.append : pill.dataset.append;
+    ta.focus();
+  });
+});
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+function showErr(msg) {
+  const el = document.getElementById('errBanner');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 8000);
+}
+
+function setLoading(on) {
+  const btn  = document.getElementById('genBtn');
+  const card = document.getElementById('loadCard');
+  btn.disabled = on;
+  btn.textContent = on ? '⏳ Generating…' : '✦ Generate';
+  card.classList.toggle('on', on);
+  if (on) {
+    document.getElementById('emptyState').style.display = 'none';
+    let i = 0;
+    const id = setInterval(() => {
+      document.getElementById('loadText').textContent = LOAD_MSGS[i++ % LOAD_MSGS.length];
+    }, 1400);
+    card._tid = id;
+  } else {
+    clearInterval(card._tid);
+    card.classList.remove('on');
+  }
+}
+
+// ─── API call (direct → proxy fallback) ───────────────────────────────────────
+async function callAPI(userPrompt, keyOverride) {
+  const key = keyOverride || apiKey;
+
+  const system = `You are VISIONS, an expert AI art generator.
+When given a prompt, respond with ONLY a raw SVG element (no markdown, no prose, no code fences).
+The SVG must:
+- Start with <svg and end with </svg>
+- Use viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"
+- Contain rich, layered artistic content: gradients, shapes, patterns, atmospheric depth
+- Visually represent the user's prompt in a creative and detailed way
+- Be self-contained (no external images or fonts)
+Just the SVG code. Nothing else.`;
+
+  const body = JSON.stringify({
+    model: MODEL,
+    max_tokens: 4096,
+    system,
+    messages: [{ role: 'user', content: userPrompt }]
+  });
+
+  // 1) Try direct with Anthropic's browser-access header
+  let res;
+  try {
+    res = await fetch(ANTHROPIC, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body
+    });
+  } catch (_) {
+    // Network/CORS error → try proxy
+    res = null;
+  }
+
+  // 2) Fallback via corsproxy.io
+  if (!res || !res.ok) {
+    const proxied = await fetch(PROXY, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01'
+      },
+      body
+    });
+
+    if (!proxied.ok) {
+      const errData = await proxied.json().catch(() => ({}));
+      const msg = errData.error?.message || `HTTP ${proxied.status}`;
+      if (proxied.status === 401) throw new Error('Invalid API key — please re-enter.');
+      if (proxied.status === 429) throw new Error('Rate limited — wait a moment and try again.');
+      throw new Error(msg);
+    }
+    res = proxied;
+  }
+
+  const data = await res.json();
+  const text = data.content?.find(b => b.type === 'text')?.text || '';
+  if (!text) throw new Error('Empty response from API.');
+  return text;
+}
+
+// ─── SVG handling ─────────────────────────────────────────────────────────────
+function extractSVG(raw) {
+  // Strip markdown fences if Claude added them
+  const cleaned = raw.replace(/```[a-z]*\n?/gi, '').trim();
+  const m = cleaned.match(/<svg[\s\S]*<\/svg>/i);
+  return m ? m[0] : null;
+}
+
+function svgToURL(svg) {
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function addCard(svgData, promptText, style, ratio) {
+  document.getElementById('emptyState').style.display = 'none';
+  totalImages++;
+  document.getElementById('galCount').textContent = totalImages + ' image' + (totalImages !== 1 ? 's' : '');
+
+  const card = document.createElement('div');
+  card.className = 'image-card';
+
+  const safePrompt = promptText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  card.innerHTML = `
+    <img src="${svgToURL(svgData)}" alt="Generated artwork" loading="lazy">
+    <div class="card-body">
+      <div class="card-prompt">${safePrompt}</div>
+      <div class="card-meta">
+        ${style ? `<span class="meta-tag">${style.split(',')[0].trim()}</span>` : ''}
+        <span class="meta-tag">${ratio}</span>
+        <span class="meta-tag">#${totalImages}</span>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button class="btn-act" id="dl-${totalImages}">⬇ Download</button>
+      <button class="btn-act" id="rx-${totalImages}">↺ Remix</button>
+    </div>`;
+
+  card.querySelector(`#dl-${totalImages}`).addEventListener('click', function() {
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: 'visions-' + Date.now() + '.svg'
+    });
+    a.click();
+    URL.revokeObjectURL(a.href);
+    this.textContent = '✓ Saved!';
+    setTimeout(() => this.textContent = '⬇ Download', 2200);
+  });
+
+  card.querySelector(`#rx-${totalImages}`).addEventListener('click', () => {
+    document.getElementById('prompt').value = promptText;
+    document.getElementById('prompt').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  const grid = document.getElementById('imageGrid');
+  grid.insertBefore(card, grid.firstChild);
+}
+
+// ─── Generate ─────────────────────────────────────────────────────────────────
+async function generate() {
+  const promptEl  = document.getElementById('prompt');
+  const userPrompt = promptEl.value.trim();
+
+  if (!userPrompt) {
+    promptEl.style.borderColor = '#ef4444';
+    promptEl.focus();
+    setTimeout(() => promptEl.style.borderColor = '', 1600);
+    return;
+  }
+
+  const neg   = document.getElementById('negPrompt').value.trim();
+  const ratio = document.getElementById('aspectRatio').value;
+  const count = Math.min(4, Math.max(1, +document.getElementById('count').value || 1));
+
+  let full = userPrompt;
+  if (selectedStyle) full += ', ' + selectedStyle;
+  if (neg) full += '\n\nPlease avoid: ' + neg;
+  full += '\nAspect ratio: ' + ratio;
+
+  setLoading(true);
+  document.getElementById('errBanner').classList.remove('show');
+
+  const jobs    = Array.from({ length: count }, () => callAPI(full));
+  const results = await Promise.allSettled(jobs);
+
+  let ok = false;
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      const svg = extractSVG(r.value);
+      if (svg) { addCard(svg, userPrompt, selectedStyle, ratio); ok = true; }
+      else showErr('Model returned unexpected format — try again.');
+    } else {
+      showErr(r.reason?.message || 'Generation failed.');
+    }
+  }
+
+  if (!ok && totalImages === 0) document.getElementById('emptyState').style.display = '';
+  setLoading(false);
+}
+
+document.getElementById('genBtn').addEventListener('click', generate);
+document.getElementById('prompt').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
+});
+</script>
+</body>
+</html>
