@@ -213,8 +213,8 @@
     <button class="btn-enter" id="enterBtn">✦ Enter VISIONS</button>
 
     <p class="proxy-note">
-      Uses <a href="https://corsproxy.io" target="_blank" rel="noopener">corsproxy.io</a> as a CORS bridge so your browser can reach the Anthropic API.
-      Your API key is forwarded only to <strong>api.anthropic.com</strong>.
+      Requests route through a private Cloudflare Worker proxy.<br>
+      Your API key is forwarded only to <strong>api.anthropic.com</strong> — nothing is stored.
     </p>
   </div>
 </div>
@@ -322,11 +322,10 @@
 
 <script>
 // ─── Config ───────────────────────────────────────────────────────────────────
-// Primary: Anthropic's own CORS header (works if they allow it)
-// Fallback: corsproxy.io wraps the request and adds CORS headers
-const ANTHROPIC = 'https://api.anthropic.com/v1/messages';
-const PROXY     = 'https://corsproxy.io/?url=' + encodeURIComponent(ANTHROPIC);
-const MODEL     = 'claude-sonnet-4-20250514';
+// Point this at your own Cloudflare Worker (see cloudflare-worker.js).
+// Replace the URL below after you deploy your Worker.
+const PROXY = 'https://visions-proxy.prithvinpratheep.workers.dev/v1/messages';
+const MODEL = 'claude-sonnet-4-20250514';
 
 const LOAD_MSGS = [
   'CONJURING YOUR VISION…','RENDERING PIXELS…','WEAVING LIGHT…',
@@ -450,44 +449,23 @@ Just the SVG code. Nothing else.`;
     messages: [{ role: 'user', content: userPrompt }]
   });
 
-  // 1) Try direct with Anthropic's browser-access header
-  let res;
-  try {
-    res = await fetch(ANTHROPIC, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body
-    });
-  } catch (_) {
-    // Network/CORS error → try proxy
-    res = null;
-  }
+  // Route through your own Cloudflare Worker — clean CORS, no third parties
+  const res = await fetch(PROXY, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01'
+    },
+    body
+  });
 
-  // 2) Fallback via corsproxy.io
-  if (!res || !res.ok) {
-    const proxied = await fetch(PROXY, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01'
-      },
-      body
-    });
-
-    if (!proxied.ok) {
-      const errData = await proxied.json().catch(() => ({}));
-      const msg = errData.error?.message || `HTTP ${proxied.status}`;
-      if (proxied.status === 401) throw new Error('Invalid API key — please re-enter.');
-      if (proxied.status === 429) throw new Error('Rate limited — wait a moment and try again.');
-      throw new Error(msg);
-    }
-    res = proxied;
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    const msg = errData.error?.message || `HTTP ${res.status}`;
+    if (res.status === 401) throw new Error('Invalid API key — please re-enter.');
+    if (res.status === 429) throw new Error('Rate limited — wait a moment and try again.');
+    throw new Error(msg);
   }
 
   const data = await res.json();
